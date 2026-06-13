@@ -1,4 +1,4 @@
-import { useState, createContext, useContext } from 'react'
+import { useState, createContext, useContext, type ReactNode } from 'react'
 import { 
   GraduationCap, 
   Users, 
@@ -116,7 +116,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-function AuthProvider({ children }: { children: React.ReactNode }) {
+function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
   const login = (email: string): boolean => {
@@ -1384,7 +1384,7 @@ function SettingsTab({ user }: { user: User }) {
 }
 
 // Main App
-function App() {
+function AppContent() {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
 
@@ -1435,12 +1435,12 @@ function App() {
   )
 }
 
-function AppWrapper() {
+function App() {
   return (
     <AuthProvider>
-      <App />
+      <AppContent />
     </AuthProvider>
   )
 }
 
-export default AppWrapper
+export default App

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { students, payments, assessments, auditLogs, monthlyRevenue, subjectPerformance, classPerformance, users } from '../data/mockData';
+import type { Teacher, SchoolClass, TeacherStatus } from '../types';
+import { students, payments, assessments, auditLogs, monthlyRevenue, subjectPerformance, classPerformance, users, teachers, classes } from '../data/mockData';
 import {
   Users, DollarSign, GraduationCap, AlertTriangle,
-  Search, Download, Eye, CheckCircle, Clock, XCircle, Shield, Activity,
+  Search, Download, Eye, CheckCircle, Clock, XCircle, Shield, Activity, BookOpen,
+  Edit2, Trash2, Plus,
   ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
@@ -11,6 +13,8 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
 export default function AdminDashboard({ tab }: { tab: string }) {
   if (tab === 'students') return <StudentsTab />;
+  if (tab === 'teachers') return <TeacherManagementTab />;
+  if (tab === 'classes') return <ClassManagementTab />;
   if (tab === 'finance') return <FinanceTab />;
   if (tab === 'performance') return <PerformanceTab />;
   if (tab === 'assessments') return <AssessmentsTab />;
@@ -214,6 +218,353 @@ function StudentsTab() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ClassManagementTab() {
+  const [classList, setClassList] = useState<SchoolClass[]>(classes);
+  const [modal, setModal] = useState<'add' | 'edit' | null>(null);
+  const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [form, setForm] = useState({
+    name: '',
+    grade: 1,
+    stream: 'East',
+    teacherId: teachers[0]?.id ?? 0,
+    capacity: 30,
+  });
+
+  const openAdd = () => {
+    setSelectedClass(null);
+    setForm({ name: '', grade: classList.length + 1, stream: 'East', teacherId: teachers[0]?.id ?? 0, capacity: 30 });
+    setModal('add');
+  };
+
+  const openEdit = (schoolClass: SchoolClass) => {
+    setSelectedClass(schoolClass);
+    setForm({ name: schoolClass.name, grade: schoolClass.grade, stream: schoolClass.stream, teacherId: schoolClass.teacherId, capacity: schoolClass.capacity });
+    setModal('edit');
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (modal === 'add') {
+      const nextId = classList.length > 0 ? Math.max(...classList.map(c => c.id)) + 1 : 1;
+      setClassList([...classList, { id: nextId, ...form }]);
+    } else if (modal === 'edit' && selectedClass) {
+      setClassList(classList.map(c => c.id === selectedClass.id ? { ...c, ...form } : c));
+    }
+    setModal(null);
+  };
+
+  const handleDelete = (id: number) => {
+    setClassList(classList.filter(c => c.id !== id));
+    setConfirmDelete(null);
+  };
+
+  const getTeacherName = (teacherId: number) => {
+    const teacher = teachers.find(t => t.id === teacherId);
+    return teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Unassigned';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Class Management</h1>
+          <p className="text-gray-500 text-sm">Create, edit, and organize school classes</p>
+        </div>
+        <button onClick={openAdd} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-md">
+          <BookOpen className="w-5 h-5" /> Add Class
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {classList.map(schoolClass => {
+          const count = students.filter(student => student.currentClass === schoolClass.name).length;
+          const utilization = Math.round((count / schoolClass.capacity) * 100);
+          return (
+            <div key={schoolClass.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="text-xs text-gray-500">Grade {schoolClass.grade}</div>
+                  <h4 className="font-bold text-gray-900 text-lg">{schoolClass.name}</h4>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => openEdit(schoolClass)} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"><Edit2 className="w-4 h-4" /></button>
+                  <button onClick={() => setConfirmDelete(schoolClass.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </div>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div>Stream: {schoolClass.stream}</div>
+                <div>Teacher: {getTeacherName(schoolClass.teacherId)}</div>
+                <div>Capacity: {schoolClass.capacity}</div>
+                <div>{count} students enrolled</div>
+              </div>
+              <div className="mt-4 bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div className={`h-2 rounded-full ${utilization > 80 ? 'bg-red-500' : utilization > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(utilization, 100)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {confirmDelete !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fadeIn">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Class?</h3>
+            <p className="text-gray-500 text-sm mb-6">This will remove the class from the roster.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => handleDelete(confirmDelete)} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(modal === 'add' || modal === 'edit') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl animate-fadeIn">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">{modal === 'add' ? 'Add Class' : 'Edit Class'}</h3>
+              <button onClick={() => setModal(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Class Name</label>
+                  <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Grade</label>
+                  <input type="number" required value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Stream</label>
+                  <input required value={form.stream} onChange={e => setForm({ ...form, stream: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Capacity</label>
+                  <input type="number" required value={form.capacity} onChange={e => setForm({ ...form, capacity: Number(e.target.value) })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Class Teacher</label>
+                <select value={form.teacherId} onChange={e => setForm({ ...form, teacherId: Number(e.target.value) })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none bg-white">
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>{teacher.firstName} {teacher.lastName}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setModal(null)} className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 shadow-md">{modal === 'add' ? 'Add Class' : 'Save Changes'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeacherManagementTab() {
+  const [teacherList, setTeacherList] = useState<Teacher[]>(teachers);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [modal, setModal] = useState<'add' | 'edit' | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    subjects: '',
+    assignedClass: classes[0]?.name ?? '',
+    status: 'active' as TeacherStatus,
+    joinDate: new Date().toISOString().split('T')[0],
+  });
+
+  const filtered = teacherList.filter(t => {
+    const searchValue = `${t.firstName} ${t.lastName} ${t.email}`.toLowerCase();
+    return (!search || searchValue.includes(search.toLowerCase())) && (!statusFilter || t.status === statusFilter);
+  });
+
+  const openAdd = () => {
+    setSelectedTeacher(null);
+    setForm({ firstName: '', lastName: '', email: '', phone: '', subjects: '', assignedClass: classes[0]?.name ?? '', status: 'active', joinDate: new Date().toISOString().split('T')[0] });
+    setModal('add');
+  };
+
+  const openEdit = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setForm({
+      firstName: teacher.firstName,
+      lastName: teacher.lastName,
+      email: teacher.email,
+      phone: teacher.phone,
+      subjects: teacher.subjects.join(', '),
+      assignedClass: teacher.assignedClass,
+      status: teacher.status,
+      joinDate: teacher.joinDate,
+    });
+    setModal('edit');
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const subjects = form.subjects.split(',').map(item => item.trim()).filter(Boolean);
+    if (modal === 'add') {
+      const nextId = teacherList.length > 0 ? Math.max(...teacherList.map(t => t.id)) + 1 : 1;
+      setTeacherList([...teacherList, { id: nextId, firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, subjects, assignedClass: form.assignedClass, status: form.status, joinDate: form.joinDate }]);
+    } else if (modal === 'edit' && selectedTeacher) {
+      setTeacherList(teacherList.map(t => t.id === selectedTeacher.id ? { ...t, firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, subjects, assignedClass: form.assignedClass, status: form.status, joinDate: form.joinDate } : t));
+    }
+    setModal(null);
+  };
+
+  const handleDelete = (id: number) => {
+    setTeacherList(teacherList.filter(t => t.id !== id));
+    setConfirmDelete(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Teacher Management</h1>
+          <p className="text-gray-500 text-sm">Add, update, and manage teacher assignments</p>
+        </div>
+        <button onClick={openAdd} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-md">
+          <Plus className="w-5 h-5" /> Add Teacher
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teachers..." className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none transition-all" />
+        </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none bg-white">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.length === 0 ? (
+          <div className="col-span-full text-center py-12 text-gray-400 bg-white rounded-2xl">No teachers match your filters</div>
+        ) : filtered.map(teacher => (
+          <div key={teacher.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg">
+                  {teacher.firstName[0]}{teacher.lastName[0]}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900">{teacher.firstName} {teacher.lastName}</h4>
+                  <p className="text-xs text-gray-500">{teacher.email}</p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${teacher.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}`}>
+                {teacher.status}
+              </span>
+            </div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div>Phone: {teacher.phone}</div>
+              <div>Assigned class: {teacher.assignedClass}</div>
+              <div>Subjects: {teacher.subjects.join(', ')}</div>
+              <div>Joined: {teacher.joinDate}</div>
+            </div>
+            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+              <button onClick={() => openEdit(teacher)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-50 text-amber-700 font-semibold text-sm hover:bg-amber-100 transition-colors">
+                <Edit2 className="w-4 h-4" /> Edit
+              </button>
+              <button onClick={() => setConfirmDelete(teacher.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50 text-red-600 font-semibold text-sm hover:bg-red-100 transition-colors">
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {confirmDelete !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fadeIn">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Teacher?</h3>
+            <p className="text-gray-500 text-sm mb-6">This will remove the teacher profile from the system.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => handleDelete(confirmDelete)} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(modal === 'add' || modal === 'edit') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl animate-fadeIn">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">{modal === 'add' ? 'Add Teacher' : 'Edit Teacher'}</h3>
+              <button onClick={() => setModal(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">First Name</label>
+                  <input required value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Last Name</label>
+                  <input required value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                  <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
+                  <input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Subjects</label>
+                <input value={form.subjects} onChange={e => setForm({ ...form, subjects: e.target.value })} placeholder="Math, English" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Assigned Class</label>
+                  <select value={form.assignedClass} onChange={e => setForm({ ...form, assignedClass: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none bg-white">
+                    {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                  <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as TeacherStatus })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none bg-white">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Join Date</label>
+                <input type="date" value={form.joinDate} onChange={e => setForm({ ...form, joinDate: e.target.value })} className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-amber-500 outline-none" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setModal(null)} className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 shadow-md">{modal === 'add' ? 'Add Teacher' : 'Save Changes'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

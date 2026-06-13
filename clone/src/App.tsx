@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import AdminDashboard from './components/AdminDashboard';
 import TeacherDashboard from './components/TeacherDashboard';
 import ParentDashboard from './components/ParentDashboard';
+import ReportCards from './components/ReportCards';
 
 function AppContent() {
   const { user, isAuthenticated } = useAuth();
@@ -19,6 +20,10 @@ function AppContent() {
   };
 
   const getDashboard = () => {
+    if (activeTab === 'report-cards') {
+      return <ReportCards />;
+    }
+
     switch (user.role) {
       case 'admin':
         return <AdminDashboard tab={activeTab} />;

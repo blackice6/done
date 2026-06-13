@@ -57,3 +57,26 @@ export interface ClassInfo {
   teacherId: number;
   studentCount: number;
 }
+
+export type TeacherStatus = 'active' | 'inactive';
+
+export interface Teacher {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  subjects: string[];
+  assignedClass: string;
+  status: TeacherStatus;
+  joinDate: string;
+}
+
+export interface SchoolClass {
+  id: number;
+  name: string;
+  grade: number;
+  stream: string;
+  teacherId: number;
+  capacity: number;
+}

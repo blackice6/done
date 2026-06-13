@@ -9,6 +9,17 @@ export const users: User[] = [
   { id: 6, username: 'Sarah Chebet', email: 'parent3@goldenkey.com', phone: '0767890123', role: 'parent' },
 ];
 
+export const teachers: Teacher[] = [
+  { id: 2, firstName: 'Mary', lastName: 'Wanjiku', email: 'teacher@goldenkey.com', phone: '0723456789', subjects: ['Mathematics', 'English'], assignedClass: 'Grade 4 West', status: 'active', joinDate: '2023-01-15' },
+  { id: 3, firstName: 'John', lastName: 'Kamau', email: 'teacher2@goldenkey.com', phone: '0734567890', subjects: ['Science', 'CRE'], assignedClass: 'Grade 6 East', status: 'active', joinDate: '2023-02-10' },
+];
+
+export const classes: SchoolClass[] = [
+  { id: 1, name: 'Grade 4 West', grade: 4, stream: 'West', teacherId: 2, capacity: 30 },
+  { id: 2, name: 'Grade 6 East', grade: 6, stream: 'East', teacherId: 3, capacity: 32 },
+  { id: 3, name: 'Grade 5 South', grade: 5, stream: 'South', teacherId: 2, capacity: 28 },
+];
+
 export const students: Student[] = [
   { id: 1, admNumber: 'GKS/2024/001', firstName: 'Emma', lastName: 'Akinyi', currentClass: 'Grade 4 West', feeBalance: 5000, parentId: 4 },
   { id: 2, admNumber: 'GKS/2024/002', firstName: 'David', lastName: 'Akinyi', currentClass: 'Grade 6 East', feeBalance: 12000, parentId: 4 },

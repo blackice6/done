@@ -11,9 +11,12 @@ const navItems = {
   admin: [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'students', label: 'All Students', icon: Users },
+    { id: 'teachers', label: 'Teacher Management', icon: Users },
+    { id: 'classes', label: 'Class Management', icon: BookOpen },
     { id: 'finance', label: 'Finance', icon: DollarSign },
     { id: 'performance', label: 'Performance', icon: BarChart3 },
     { id: 'assessments', label: 'Assessments', icon: ClipboardList },
+    { id: 'report-cards', label: 'Report Cards', icon: FileText },
     { id: 'audit', label: 'Audit Logs', icon: FileText },
   ],
   teacher: [
@@ -21,12 +24,14 @@ const navItems = {
     { id: 'students', label: 'My Students', icon: Users },
     { id: 'assessments', label: 'Record Assessment', icon: ClipboardList },
     { id: 'performance', label: 'Subject Performance', icon: BarChart3 },
+    { id: 'report-cards', label: 'Report Cards', icon: FileText },
   ],
   parent: [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'children', label: 'My Children', icon: Users },
     { id: 'fees', label: 'Fee Details', icon: DollarSign },
     { id: 'performance', label: 'Academic Progress', icon: BarChart3 },
+    { id: 'report-cards', label: 'Report Cards', icon: FileText },
   ],
 };
 
